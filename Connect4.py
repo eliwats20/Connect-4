@@ -1,281 +1,137 @@
-from art import logo
+import tkinter as tk
+from tkinter import messagebox
 import random
 
-print(logo)
+# Constants for the board
+ROWS = 6
+COLS = 7
+EMPTY = None  # No text in the cell
+PLAYER_1 = "🔴"
+PLAYER_2 = "🔵"
 
-# Initialize the grid
-global grid
-grid = [
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ["⚫", "⚫", "⚫", "⚫", "⚫", "⚫", "⚫"],
-    ]
+# Initialize the board
+board = [[EMPTY for _ in range(COLS)] for _ in range(ROWS)]
 
-global row
-global column
+# Create the root window
+root = tk.Tk()
+root.title("Connect 4")
 
-#Prints the Connect 4 grid with lines separating columns. 
-def print_grid(grid):
-    for row in grid:
-        print(' | '.join(row))
-        print('-' * (5 * len(row) - 1))  # Adjust for the length of the grid
-    return grid
+# Initialize the current player
+current_player = PLAYER_1
 
+# Initialize the mode (True for multiplayer, False for singleplayer)
+is_multiplayer = True  # Default to multiplayer
 
-#Checks if the specified position on the grid is empty.
-def isEmpty(grid, row, column):
-    return grid[row][column] ==  "⚫"
-            
+# Function to check if the current player has won
+def check_win():
+    for row in range(ROWS):
+        for col in range(COLS):
+            if board[row][col] == current_player:
+                # Horizontal check
+                if col + 3 < COLS and all(board[row][col+i] == current_player for i in range(4)):
+                    return True
+                # Vertical check
+                if row + 3 < ROWS and all(board[row+i][col] == current_player for i in range(4)):
+                    return True
+                # Diagonal (top-left to bottom-right) check
+                if row + 3 < ROWS and col + 3 < COLS and all(board[row+i][col+i] == current_player for i in range(4)):
+                    return True
+                # Diagonal (top-right to bottom-left) check
+                if row + 3 < ROWS and col - 3 >= 0 and all(board[row+i][col-i] == current_player for i in range(4)):
+                    return True
+    return False
 
-#Drops game piece in the specific column
-def drop_piece(grid, column, piece):
-    
-    for row in range(5, -1, -1):
-        if isEmpty(grid, row, column):
-            grid[row][column] = piece   
-            return grid
-    return grid
+# Function to drop a piece into the selected column
+def drop_piece(col):
+    global current_player
 
+    # Find the first empty row in the selected column
+    for row in range(ROWS-1, -1, -1):
+        if board[row][col] == EMPTY:
+            board[row][col] = current_player
+            update_board()
+            # Check for win after the move
+            if check_win():
+                messagebox.showinfo("Game Over", f"Player {1 if current_player == PLAYER_1 else 2} wins!")
+                reset_board()
+            else:
+                # Switch players (for multiplayer) or proceed to AI (for singleplayer)
+                if is_multiplayer:
+                    current_player = PLAYER_2 if current_player == PLAYER_1 else PLAYER_1
+                else:
+                    if current_player == PLAYER_1:
+                        current_player = PLAYER_2
+                        ai_move()
+            break
 
-#Prompts the user to select game mode
-def get_game_mode():
-    play = int(input("Would you like to play single player against the CPU or multiplayer? Type 1 for single player or 2 for multiplayer or 3 to quit \n" ))
-    
+# AI (Player 2) makes a random move
+def ai_move():
+    global current_player
     while True:
-        if play == 1:
-            return 1
-        elif play == 2:
-            return 2
-        elif play == 3:
-            return 3
-        else:
-            play = input("I apologize but your input is invalid. Would you like to play single player against the CPU or multiplayer? Type 1 for single player or 2 for multiplayer. \n")
-
-
-
-
-#Checks for a win condition in the grid for the given piece.
-def win(piece):
-    win = False
-
-    #Vertical Check
-    for row in range(3):
-        for column in range(7):
-            if grid[row][column] == piece and grid[row+1][column] == piece and grid[row+2][column] == piece and grid[row+3][column] == piece:
-                win = True
-    
-    #Horizontal Check
-    for row in range(6):
-        for column in range(4):
-            if grid[row][column] == piece and grid[row][column+1] == piece and grid[row][column+2] == piece and grid[row][column+3] == piece:
-                win = True
-
-    #Diagonal Checks
-
-    #Column 1-4 bottom left to top right
-    for row in range(4, 6):
-        for column in range(4):
-                if grid[row][column] == piece and grid[row-1][column+1] == piece and grid[row-2][column+2] == piece and grid[row-3][column+3] == piece:
-                    win = True
-
-    #Column 1-4 top right to bottom left
-    for row in range(3):
-        for column in range(4):
-                if grid[row][column] == piece and grid[row+1][column-1] == piece and grid[row+2][column-2] == piece and grid[row+3][column-3] == piece:
-                    win = True
-
-    #Column 1-4 top left to bottom right
-    for row in range(3):
-        for column in range(4):
-            if grid[row][column] == piece and grid[row+1][column+1] == piece and grid[row+2][column+2] == piece and grid[row+3][column+3] == piece:
-                win = True
-    
-    #Column 1-4 bottom right to top left
-    for row in range(3):
-        for column in range(4):
-            if grid[row][column] == piece and grid[row-1][column-1] == piece and grid[row-2][column-2] == piece and grid[row-3][column-3] == piece:
-                win = True
-    
-    #Column 4-7 bottom left to top right
-
-    #MUST STOP AT COLUMN 4 TO STAY INBOUND
-    for row in range(4, 6):
-        for column in range(4):
-            if grid[row][column] == piece and grid[row-1][column+1] == piece and grid[row-2][column+2] == piece and grid[row-3][column+3] == piece:
-                win = True
-
-    #Column 4-7 top right to bottom left
-    for row in range(3):
-        for column in range(4, 7):
-            if grid[row][column] == piece and grid[row+1][column-1] == piece and grid[row+2][column-2] == piece and grid[row+3][column-3] == piece:
-                    win = True
-                
-    #Column 4-7 top left to bottom right
-    for row in range(3):
-        for column in range(4):
-            if grid[row][column] == piece and grid[row+1][column+1] == piece and grid[row+2][column+2] == piece and grid[row+3][column+3] == piece:
-                    win = True
-    
-    #Column 4-7 bottom right to top left
-    for row in range(3):
-        for column in range(4, 7):
-            if grid[row][column] == piece and grid[row-1][column-1] == piece and grid[row-2][column-2] == piece and grid[row-3][column-3] == piece:
-                    win = True
-    
-    
-    return win
-                    
-#Assumes game is not finished on default, allowing user to play the game
-game_finished = False
-
-#Handles the single-player game mode against the CPU
-def play_single():
-    global game_finished
-
-    connect4_grid = print_grid(grid)
-
-    
-    while not game_finished:
-        column_drop = int(input("User's turn. Type # column 1 - 7 to drop your piece. \n"))
-
-        while True: 
-            if column_drop >= 1 and column_drop <= 7:
-                if not isEmpty(grid, 0, column_drop-1):
-                    column_drop = int(input("This column is full. Drop your piece in a column # 1 - 7. \n"))
+        col = random.randint(0, COLS-1)
+        for row in range(ROWS-1, -1, -1):
+            if board[row][col] == EMPTY:
+                board[row][col] = PLAYER_2
+                update_board()
+                if check_win():
+                    messagebox.showinfo("Game Over", "Player 2 (AI) wins!")
+                    reset_board()
                 else:
-                    break
+                    # Switch back to Player 1 (human)
+                    current_player = PLAYER_1
+                return
+
+# Function to update the board in the GUI
+def update_board():
+    for row in range(ROWS):
+        for col in range(COLS):
+            label = board_labels[row][col]
+            if board[row][col] == PLAYER_1:
+                label.config(bg="red")  # Entire square becomes red for Player 1
+            elif board[row][col] == PLAYER_2:
+                label.config(bg="blue")  # Entire square becomes blue for Player 2
             else:
-                column_drop = int(input("Invalid input. Drop your piece in a column # 1 - 7. \n"))
+                label.config(bg="white")  # Empty cells are white
 
-        drop_piece(grid, column_drop-1, "🔴")
-        connect4_grid = print_grid(grid)
-        print("\n")
+# Function to reset the board
+def reset_board():
+    global board, current_player
+    board = [[EMPTY for _ in range(COLS)] for _ in range(ROWS)]
+    current_player = PLAYER_1
+    update_board()
 
-        if win("🔴") == True:
-            print("Player 1 wins!")
-            game_finished = True
-            break
-        print("\n")
+# Function to select game mode (multiplayer or singleplayer)
+def select_game_mode(mode):
+    global is_multiplayer
+    is_multiplayer = mode
+    reset_board()
+    mode_label.config(text="Multiplayer Mode" if is_multiplayer else "Singleplayer Mode")
 
-        if game_finished:
-           break
+# Create the GUI grid
+board_labels = []
+for row in range(ROWS):
+    label_row = []
+    for col in range(COLS):
+        label = tk.Label(root, text="", width=6, height=3, bg="white", borderwidth=1, relief="solid", font=("Arial", 24),
+                         anchor="center")
+        label.grid(row=row, column=col)
+        label.bind("<Button-1>", lambda event, col=col: drop_piece(col))
+        label_row.append(label)
+    board_labels.append(label_row)
 
-        #Computer generates a different column to drop a piece if the column is out of index or full.
-        print("Computer's turn. Drop your piece in a column # 1 - 7. \n")
-        column_drop = random.randint(1, 8)
-        while True: 
-            if column_drop >= 1 and column_drop <= 7:
-                if not isEmpty(grid, 0, column_drop-1):
-                    column_drop = random.randint(1,8)
-                else:
-                    break
-            else:
-                column_drop = random.randint(1,8)
-        drop_piece(grid, column_drop-1, "🔵")
-        connect4_grid = print_grid(grid)
-        print("\n")
+# Add buttons for selecting game mode
+mode_label = tk.Label(root, text="Multiplayer Mode", font=("Arial", 16))
+mode_label.grid(row=ROWS, column=0, columnspan=COLS, sticky="nsew")
 
-        if win("🔵"):
-            print("Computer wins!")
-            game_finished = True
-            break
-        print("\n")
-        
-        
-        if game_finished:
-            break
+multiplayer_button = tk.Button(root, text="Multiplayer", command=lambda: select_game_mode(True), font=("Arial", 16))
+multiplayer_button.grid(row=ROWS+1, column=0, columnspan=3, sticky="nsew")
 
+singleplayer_button = tk.Button(root, text="Singleplayer", command=lambda: select_game_mode(False), font=("Arial", 16))
+singleplayer_button.grid(row=ROWS+1, column=3, columnspan=4, sticky="nsew")
 
+# Add a reset button to restart the game
+reset_button = tk.Button(root, text="Restart Game", command=reset_board, font=("Arial", 16))
+reset_button.grid(row=ROWS+2, column=0, columnspan=COLS, sticky="nsew")
 
-
-#Handles multiplayer game mode
-def play_multi():
- 
-    global game_finished
-
-    connect4_grid = print_grid(grid)
-    
-    while not game_finished:
-
-        column_drop = int(input("Player 1's turn. Type # column 1 - 7 to drop your piece. \n"))
-
-        while True: 
-            if column_drop >= 1 and column_drop <= 7:
-                if not isEmpty(grid, 0, column_drop-1):
-                    column_drop = int(input("This column is full. Drop your piece in a column # 1 - 7. \n"))
-                else:
-                    break
-            else:
-                column_drop = int(input("Invalid input. Drop your piece in a column # 1 - 7. \n"))
-
-        drop_piece(grid, column_drop-1, "🔴")
-        connect4_grid = print_grid(grid)
-        print("\n")
-
-        if win("🔴") == True:
-            print("Player 1 wins!")
-            game_finished = True
-            break
-        print("\n")
-
-        if game_finished:
-           break
-            
-
-        column_drop = int(input("Player 2's turn. Type # column 1 - 7 to drop your piece. \n"))
-        while True: 
-            if column_drop >= 1 and column_drop <= 7:
-                if not isEmpty(grid, 0, column_drop-1):
-                    column_drop = int(input("This column is full. Drop your piece in a column # 1 - 7. \n"))
-                else:
-                    break
-            else:
-                column_drop = int(input("Invalid input. Drop your piece in a column # 1 - 7. \n"))
-        drop_piece(grid, column_drop-1, "🔵")
-        connect4_grid = print_grid(grid)
-        print("\n")
-
-        if win("🔵"):
-            print("Player 2 wins!")
-            game_finished = True
-            break
-        print("\n")
-        
-        
-        if game_finished:
-            break
-    
-
-
-    
-
-
-play_again = True
-
-print("Welcome to Connect 4! \n")
-
-
-while play_again:
-
-    game_mode = get_game_mode()
-
-    while True:
-            if game_mode == 1:
-                play_single()
-                break
-            elif game_mode == 2:
-                play_multi()
-                break
-            elif game_mode == 3:
-                print("Thank you for playing, goodbye!")
-                play_again = False
-                break
-            else:
-                play = input("I apologize but your input is invalid. Would you like to play single player against the CPU or multiplayer? Type 1 for single player or 2 for multiplayer. \n")
-                
-    if play_again == False:
-        break
-    
+# Start the main loop
+root.mainloop()
