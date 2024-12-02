@@ -64,12 +64,51 @@ def drop_piece(col):
                         ai_move()
             break
 
-# AI (Player 2) makes a random move
+# AI (Player 2) makes move 
 def ai_move():
     global current_player
+    # Check for AI's winning moves and make them
+    for col in range(COLS - 1, -1, -1):
+        for row in range(ROWS - 1, -1, -1):
+            if board[row][col] == EMPTY:
+                # Temporarily place AI's piece
+                board[row][col] = PLAYER_2
+                for testrow in range(ROWS - 1, -1, -1):
+                    if board[testrow][col] == EMPTY and testrow > row:
+                        board[row][col] = EMPTY # ignores moves not possible to make
+                if check_win():
+                    # If AI would win, make the move
+                    board[row][col] = PLAYER_2
+                    update_board()
+                    messagebox.showinfo("Game over", "Player 2 (AI) wins!")
+                    reset_board()
+                    return
+                # Undo the temporary move
+                board[row][col] = EMPTY
+    # Check for Player 1's winning moves and block them
+    for col in range(COLS -1, -1, -1):
+        for row in range(ROWS - 1, -1, -1):
+            if board[row][col] == EMPTY:
+                # Temporarily place Player 1's piece
+                board[row][col] = PLAYER_1
+                current_player = PLAYER_1
+                for testrow in range(ROWS - 1, -1, -1):
+                    if board[testrow][col] == EMPTY and testrow > row:
+                        board[row][col] = EMPTY # ignores moves not possible to make
+                if check_win():
+                    # If Player 1 would win, block them
+                    current_player = PLAYER_2
+                    board[row][col] = PLAYER_2
+                    update_board()
+                    current_player = PLAYER_1
+                    return         
+                # Undo the temporary move
+                current_player = PLAYER_2
+                board[row][col] = EMPTY
+    # If no winning or blocking move, make a random move
     while True:
-        col = random.randint(0, COLS-1)
-        for row in range(ROWS-1, -1, -1):
+        col = random.randint(0, COLS - 1)
+        for row in range(ROWS - 1, -1, -1):
             if board[row][col] == EMPTY:
                 board[row][col] = PLAYER_2
                 update_board()
@@ -77,7 +116,6 @@ def ai_move():
                     messagebox.showinfo("Game Over", "Player 2 (AI) wins!")
                     reset_board()
                 else:
-                    # Switch back to Player 1 (human)
                     current_player = PLAYER_1
                 return
 
